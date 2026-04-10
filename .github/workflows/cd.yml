@@ -1,0 +1,19 @@
+name: CD — Deploy to Render
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy:
+    name: Deploy API → Render
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Trigger Render deploy hook
+        run: |
+          curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          echo "✅ Déploiement Render déclenché"

@@ -1,0 +1,60 @@
+# ── Python ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+
+# ── uv ──────────────────────────────────────────────
+.venv/
+.uv/
+
+# ── Environnement ────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Données ──────────────────────────────────────────
+data/*.csv
+data/*.parquet
+data/*.xlsx
+!data/.gitkeep
+
+# ── Modèles ML (trop lourds pour git) ────────────────
+# Décommentez si vous préférez ne pas versionner les .pkl
+# Frequence/models/*.pkl
+# Severite/models/*.pkl
+
+# ── Outputs intermédiaires ───────────────────────────
+Frequence/outputs/*
+Severite/outputs/*
+Prime/outputs/*
+!Frequence/outputs/gitkeep
+!Severite/outputs/gitkeep
+!Prime/outputs/gitkeep
+
+# ── CatBoost info ────────────────────────────────────
+catboost_info/
+Frequence/src/catboost_info/
+Severite/src/catboost_info/
+
+# ── IDE ──────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+
+# ── OS ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Docker ───────────────────────────────────────────
+postgres_data/
+
+# ── Tests ────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
