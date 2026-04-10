@@ -123,9 +123,21 @@ class InsurancePredictor:
         df = pd.DataFrame([input_data])
         df = freq_prep.preprocess(df)
         cols = self._get_cols_freq(df)
-        # CalibratedClassifierCV → sklearn API, pas de Pool
-        df_encoded = _prepare_df_for_calibrated(df[cols])
-        frequence = float(self.model_freq.predict_proba(df_encoded)[:, 1][0])
+        df_pred = df[cols].copy()
+
+        # CalibratedClassifierCV wrape un CatBoost
+        # On récupère le CatBoost sous-jacent pour créer un Pool propre
+        base_model = self.model_freq.calibrated_classifiers_[0].estimator  # type: ignore[attr-defined]
+        pool = _make_pool_catboost(df_pred, base_model)
+
+        # Prédiction avec calibration : moyenne des calibrated_classifiers
+        probas = []
+        for cal_clf in self.model_freq.calibrated_classifiers_:  # type: ignore[attr-defined]
+            raw = cal_clf.estimator.predict_proba(pool)[:, 1]  # type: ignore[attr-defined]
+            calibrated = cal_clf.calibrators[0].predict(raw)  # type: ignore[attr-defined]
+            probas.append(float(calibrated[0]))
+
+        frequence = sum(probas) / len(probas)
         return round(frequence, 6)
 
     def predict_severite(self, input_data: dict) -> float:
