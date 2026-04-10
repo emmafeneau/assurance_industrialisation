@@ -14,13 +14,12 @@ _PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", str(Path(__file__).resolve().pare
 load_dotenv(_PROJECT_ROOT / ".env")
 
 # -----------------------
-# Chemins depuis .env (convertir en chemin absolu)
+# Chemins depuis .env
 # -----------------------
 _freq_model = os.getenv("FREQ_MODEL_PATH", "Frequence/models/catboost_calibrated.pkl")
 _sev_model = os.getenv("SEV_MODEL_PATH", "Severite/models/catboost_severite.pkl")
 _rf_poids = os.getenv("RF_POIDS_PATH", "Severite/models/model_rf_poids.pkl")
 
-# Construire les chemins absolus
 FREQ_MODEL_PATH = str(_PROJECT_ROOT / _freq_model) if not Path(_freq_model).is_absolute() else _freq_model
 SEV_MODEL_PATH = str(_PROJECT_ROOT / _sev_model) if not Path(_sev_model).is_absolute() else _sev_model
 RF_POIDS_PATH = str(_PROJECT_ROOT / _rf_poids) if not Path(_rf_poids).is_absolute() else _rf_poids
@@ -45,17 +44,35 @@ sev_prep: Any = _load_module("sev_prep", str(_BASE / "Severite/src/preprocessing
 sev_prep.RF_POIDS_PATH = RF_POIDS_PATH or sev_prep.RF_POIDS_PATH
 
 
-def _make_pool(df: pd.DataFrame, model: Any) -> Pool:
+def _make_pool_catboost(df: pd.DataFrame, model: Any) -> Pool:
     """
-    Crée un Pool CatBoost en utilisant les cat_features
-    exactement tels qu'ils ont été définis à l'entraînement.
+    Crée un Pool pour un modèle CatBoost direct.
+    Utilise les cat_features du modèle si disponibles,
+    sinon détecte les colonnes object.
     """
-    cat_indices = model.get_cat_feature_indices()
-    feature_names = model.feature_names_
-    cat_cols = [feature_names[i] for i in cat_indices if feature_names[i] in df.columns]
+    try:
+        cat_indices = model.get_cat_feature_indices()
+        feature_names = model.feature_names_
+        cat_cols = [feature_names[i] for i in cat_indices if feature_names[i] in df.columns]
+    except Exception:
+        cat_cols = [c for c in df.columns if df[c].dtype == "object"]
+
     for col in cat_cols:
         df[col] = df[col].astype(str).replace("nan", "Aucun")
+
     return Pool(data=df, cat_features=cat_cols if cat_cols else None)
+
+
+def _prepare_df_for_calibrated(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Prépare le DataFrame pour un CalibratedClassifierCV (sklearn).
+    Encode les colonnes catégorielles en codes numériques.
+    """
+    df = df.copy()
+    for col in df.columns:
+        if df[col].dtype == "object" or df[col].dtype.name == "category":
+            df[col] = df[col].astype("category").cat.codes
+    return df
 
 
 class InsurancePredictor:
@@ -70,7 +87,7 @@ class InsurancePredictor:
             try:
                 self.model_freq = joblib.load(FREQ_MODEL_PATH)
             except Exception as e:
-                logger.error(f"Erreur lors du chargement du modèle de fréquence: {e}")
+                logger.error(f"Erreur chargement modèle fréquence: {e}")
                 self.model_freq = None
 
         if not SEV_MODEL_PATH or not os.path.exists(SEV_MODEL_PATH):
@@ -80,7 +97,7 @@ class InsurancePredictor:
             try:
                 self.model_sev = joblib.load(SEV_MODEL_PATH)
             except Exception as e:
-                logger.error(f"Erreur lors du chargement du modèle de sévérité: {e}")
+                logger.error(f"Erreur chargement modèle sévérité: {e}")
                 self.model_sev = None
 
         self.model_poids = None
@@ -88,11 +105,8 @@ class InsurancePredictor:
             try:
                 self.model_poids = joblib.load(RF_POIDS_PATH)
             except Exception as e:
-                logger.warning(f"Erreur lors du chargement du modèle de poids: {e}")
+                logger.warning(f"Erreur chargement modèle poids: {e}")
 
-    # -----------------------
-    # Colonnes features
-    # -----------------------
     def _get_cols_freq(self, df: pd.DataFrame) -> list:
         exclude = {"nombre_sinistres", "montant_sinistre"}
         return [c for c in df.columns if c not in exclude]
@@ -103,17 +117,15 @@ class InsurancePredictor:
         all_features = quanti + quali_clean
         return [c for c in all_features if c in df.columns]
 
-    # -----------------------
-    # Prédictions
-    # -----------------------
     def predict_frequence(self, input_data: dict) -> float:
         if self.model_freq is None:
             raise RuntimeError("Le modèle de fréquence n'a pas pu être chargé")
         df = pd.DataFrame([input_data])
         df = freq_prep.preprocess(df)
         cols = self._get_cols_freq(df)
-        pool = _make_pool(df[cols], self.model_freq)
-        frequence = float(self.model_freq.predict_proba(pool)[:, 1][0])
+        # CalibratedClassifierCV → sklearn API, pas de Pool
+        df_encoded = _prepare_df_for_calibrated(df[cols])
+        frequence = float(self.model_freq.predict_proba(df_encoded)[:, 1][0])
         return round(frequence, 6)
 
     def predict_severite(self, input_data: dict) -> float:
@@ -129,8 +141,7 @@ class InsurancePredictor:
             df = sev_prep.add_engineered_features(
                 df.drop(
                     columns=[
-                        c
-                        for c in df.columns
+                        c for c in df.columns
                         if c.startswith("rapport_")
                         or c.startswith("energie_")
                         or c.startswith("produit_")
@@ -141,7 +152,8 @@ class InsurancePredictor:
             )
 
         cols = self._get_cols_sev(df)
-        pool = _make_pool(df[cols], self.model_sev)
+        # CatBoost direct → Pool
+        pool = _make_pool_catboost(df[cols], self.model_sev)
         severite = float(self.model_sev.predict(pool)[0])
         return round(max(severite, 0.0), 2)
 
