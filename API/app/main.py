@@ -4,14 +4,12 @@ import sys
 import traceback
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.db.database import create_tables
 from app.routers.prediction import router
 
-# -----------------------
-# Logging structuré
-# -----------------------
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.INFO,
@@ -24,6 +22,17 @@ app = FastAPI(
     title="Insurance Prediction API",
     description="Moteur de tarification assurance auto — fréquence, sévérité, prime pure",
     version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://insurance-frontend-ruby.vercel.app",
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -44,9 +53,6 @@ async def log_requests(request: Request, call_next):
 
 app.include_router(router)
 
-# -----------------------
-# Handler d'erreurs global
-# -----------------------
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
 
