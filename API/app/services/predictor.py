@@ -48,21 +48,18 @@ sev_prep.RF_POIDS_PATH = RF_POIDS_PATH or sev_prep.RF_POIDS_PATH
 
 def _get_cat_features(df: pd.DataFrame) -> list:
     """
-    Retourne les indices des colonnes catégorielles (object ou category).
-    CatBoost attend des indices entiers ou des noms de colonnes.
+    Retourne les colonnes catégorielles — force object/str en str
+    pour éviter que CatBoost tente de les convertir en float.
     """
-    return [col for col in df.columns if df[col].dtype in ["object", "category"]]
+    cat_cols = [col for col in df.columns if df[col].dtype == "object" or df[col].dtype.name == "category"]
+    for col in cat_cols:
+        df[col] = df[col].astype(str)
+    return cat_cols
 
 
 def _make_pool(df: pd.DataFrame) -> Pool:
-    """
-    Crée un Pool CatBoost en déclarant explicitement les colonnes catégorielles.
-    Garantit que CatBoost ne tente pas de convertir 'Aucun', 'Maxi', etc. en float.
-    """
     cat_cols = _get_cat_features(df)
-    for col in cat_cols:
-        df[col] = df[col].astype(str).replace("nan", "Aucun")
-    return Pool(data=df, cat_features=cat_cols)
+    return Pool(data=df, cat_features=cat_cols if cat_cols else None)
 
 
 class InsurancePredictor:
