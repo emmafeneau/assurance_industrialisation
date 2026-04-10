@@ -58,6 +58,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra api --extra dev
 
+      - name: Create DB tables
+        env:
+            DATABASE_URL: postgresql://user:password@localhost:5432/insurance
+        run: uv run python -c "from API.app.db.database import create_tables; create_tables()"
+
       - name: Run tests
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/insurance

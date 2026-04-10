@@ -96,7 +96,13 @@ class InsurancePredictor:
         df = pd.DataFrame([input_data])
         df = freq_prep.preprocess(df)
         cols = self._get_cols_freq(df)
-        frequence = float(self.model_freq.predict_proba(df[cols])[:, 1][0])
+        df_freq = df[cols].copy()
+        # Encode les colonnes catégorielles en codes numériques
+        # car CalibratedClassifierCV ne passe pas les cat_features à CatBoost
+        for col in df_freq.columns:
+            if df_freq[col].dtype == "object" or df_freq[col].dtype.name == "category":
+                df_freq[col] = df_freq[col].astype("category").cat.codes
+        frequence = float(self.model_freq.predict_proba(df_freq)[:, 1][0])
         return round(frequence, 6)
 
     def predict_severite(self, input_data: dict) -> float:
