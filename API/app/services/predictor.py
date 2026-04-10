@@ -9,7 +9,7 @@ from catboost import Pool
 from dotenv import load_dotenv
 
 # Charger le .env depuis la racine du projet
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+_PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", str(Path(__file__).resolve().parents[3])))
 load_dotenv(_PROJECT_ROOT / ".env")
 
 # -----------------------
