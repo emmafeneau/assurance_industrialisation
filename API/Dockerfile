@@ -13,4 +13,5 @@ COPY Frequence/src ./Frequence/src
 COPY Severite/models ./Severite/models
 COPY Severite/src ./Severite/src
 
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+ENV PATH="/app/.venv/bin:$PATH"
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}
