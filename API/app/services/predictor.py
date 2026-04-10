@@ -93,17 +93,27 @@ class InsurancePredictor:
     def predict_frequence(self, input_data: dict) -> float:
         if self.model_freq is None:
             raise RuntimeError("Le modèle de fréquence n'a pas pu être chargé")
+        from catboost import Pool
+
         df = pd.DataFrame([input_data])
         df = freq_prep.preprocess(df)
         cols = self._get_cols_freq(df)
         df_freq = df[cols].copy()
-        # Encode les colonnes catégorielles en codes numériques
-        # car CalibratedClassifierCV ne passe pas les cat_features à CatBoost
-        for col in df_freq.columns:
-            if df_freq[col].dtype == "object" or df_freq[col].dtype.name == "category":
-                df_freq[col] = df_freq[col].astype("category").cat.codes
-        frequence = float(self.model_freq.predict_proba(df_freq)[:, 1][0])
-        return round(frequence, 6)
+
+        # Bypass CalibratedClassifierCV — sklearn 1.8 ne passe plus les cat_features
+        base_est = self.model_freq.calibrated_classifiers_[0].estimator
+        calibrator = self.model_freq.calibrated_classifiers_[0].calibrators[0]
+
+        cat_names = [base_est.feature_names_[i] for i in base_est.get_cat_feature_indices()]
+        cat_cols = [c for c in cat_names if c in df_freq.columns]
+        for col in cat_cols:
+            df_freq[col] = df_freq[col].astype(str)
+
+        pool = Pool(data=df_freq, cat_features=cat_cols if cat_cols else None)
+        raw = base_est.predict_proba(pool)[:, 1]
+        calibrated = calibrator.predict(raw)
+
+        return round(float(calibrated[0]), 6)
 
     def predict_severite(self, input_data: dict) -> float:
         if self.model_sev is None:
