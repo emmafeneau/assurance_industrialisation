@@ -155,18 +155,18 @@ class InsurancePredictor:
                     columns=[
                         c for c in df.columns
                         if c.startswith("rapport_")
-                        or c.startswith("energie_")
-                        or c.startswith("produit_")
-                        or c.startswith("carre_")
-                        or c.startswith("sportivite_")
+                           or c.startswith("energie_")
+                           or c.startswith("produit_")
+                           or c.startswith("carre_")
+                           or c.startswith("sportivite_")
                     ]
                 )
             )
 
         cols = self._get_cols_sev(df)
-        # CatBoost direct → Pool
-        pool = _make_pool_catboost(df[cols], self.model_sev)
-        severite = float(self.model_sev.predict(pool)[0])
+        # CatBoost sévérité entraîné sans cat_features → encoder en numérique
+        df_encoded = _prepare_df_for_calibrated(df[cols])
+        severite = float(self.model_sev.predict(df_encoded)[0])
         return round(max(severite, 0.0), 2)
 
     def predict_prime(self, input_data: dict) -> dict:
