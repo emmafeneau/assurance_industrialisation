@@ -2,6 +2,8 @@ import importlib.util
 import os
 from functools import lru_cache
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
 import joblib
 import pandas as pd
@@ -29,20 +31,19 @@ RF_POIDS_PATH = str(_PROJECT_ROOT / _rf_poids) if not Path(_rf_poids).is_absolut
 # Import des preprocessing
 # sans collision de noms
 # -----------------------
-def _load_module(name: str, path: str) -> object:
+def _load_module(name: str, path: str) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Cannot load module {name} from {path}")
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
     return mod
 
 
 _BASE = _PROJECT_ROOT
-freq_prep = _load_module("freq_prep", str(_BASE / "Frequence/src/preprocessing.py"))
-sev_prep = _load_module("sev_prep", str(_BASE / "Severite/src/preprocessing.py"))
+freq_prep: Any = _load_module("freq_prep", str(_BASE / "Frequence/src/preprocessing.py"))
+sev_prep: Any = _load_module("sev_prep", str(_BASE / "Severite/src/preprocessing.py"))
 
-# FIX : on injecte RF_POIDS_PATH dans le module sévérité après chargement
 sev_prep.RF_POIDS_PATH = RF_POIDS_PATH or sev_prep.RF_POIDS_PATH
 
 
@@ -60,18 +61,16 @@ def _make_pool(df: pd.DataFrame) -> Pool:
     Garantit que CatBoost ne tente pas de convertir 'Aucun', 'Maxi', etc. en float.
     """
     cat_cols = _get_cat_features(df)
-    # S'assure que toutes les colonnes catégorielles sont bien en str
     for col in cat_cols:
         df[col] = df[col].astype(str).replace("nan", "Aucun")
     return Pool(data=df, cat_features=cat_cols)
 
 
 class InsurancePredictor:
-    def __init__(self):
+    def __init__(self) -> None:
         import logging
         logger = logging.getLogger(__name__)
-        
-        # Vérifier et charger les modèles
+
         if not FREQ_MODEL_PATH or not os.path.exists(FREQ_MODEL_PATH):
             logger.warning(f"Modèle de fréquence non trouvé: {FREQ_MODEL_PATH}")
             self.model_freq = None
@@ -81,7 +80,7 @@ class InsurancePredictor:
             except Exception as e:
                 logger.error(f"Erreur lors du chargement du modèle de fréquence: {e}")
                 self.model_freq = None
-                
+
         if not SEV_MODEL_PATH or not os.path.exists(SEV_MODEL_PATH):
             logger.warning(f"Modèle de sévérité non trouvé: {SEV_MODEL_PATH}")
             self.model_sev = None
@@ -91,8 +90,7 @@ class InsurancePredictor:
             except Exception as e:
                 logger.error(f"Erreur lors du chargement du modèle de sévérité: {e}")
                 self.model_sev = None
-        
-        # Modèle de poids (optionnel)
+
         self.model_poids = None
         if RF_POIDS_PATH and os.path.exists(RF_POIDS_PATH):
             try:
@@ -122,7 +120,6 @@ class InsurancePredictor:
         df = pd.DataFrame([input_data])
         df = freq_prep.preprocess(df)
         cols = self._get_cols_freq(df)
-        # FIX : on passe un Pool avec les cat_features explicites
         pool = _make_pool(df[cols])
         frequence = float(self.model_freq.predict_proba(pool)[:, 1][0])
         return round(frequence, 6)
@@ -152,7 +149,6 @@ class InsurancePredictor:
             )
 
         cols = self._get_cols_sev(df)
-        # FIX : on passe un Pool avec les cat_features explicites
         pool = _make_pool(df[cols])
         severite = float(self.model_sev.predict(pool)[0])
         return round(max(severite, 0.0), 2)
