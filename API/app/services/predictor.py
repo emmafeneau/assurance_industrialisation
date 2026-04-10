@@ -27,8 +27,7 @@ RF_POIDS_PATH = str(_PROJECT_ROOT / _rf_poids) if not Path(_rf_poids).is_absolut
 
 
 # -----------------------
-# Import des preprocessing
-# sans collision de noms
+# Import des preprocessing sans collision de noms
 # -----------------------
 def _load_module(name: str, path: str) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
@@ -46,19 +45,16 @@ sev_prep: Any = _load_module("sev_prep", str(_BASE / "Severite/src/preprocessing
 sev_prep.RF_POIDS_PATH = RF_POIDS_PATH or sev_prep.RF_POIDS_PATH
 
 
-def _get_cat_features(df: pd.DataFrame) -> list:
+def _make_pool(df: pd.DataFrame, model: Any) -> Pool:
     """
-    Retourne les colonnes catégorielles — force object/str en str
-    pour éviter que CatBoost tente de les convertir en float.
+    Crée un Pool CatBoost en utilisant les cat_features
+    exactement tels qu'ils ont été définis à l'entraînement.
     """
-    cat_cols = [col for col in df.columns if df[col].dtype == "object" or df[col].dtype.name == "category"]
+    cat_indices = model.get_cat_feature_indices()
+    feature_names = model.feature_names_
+    cat_cols = [feature_names[i] for i in cat_indices if feature_names[i] in df.columns]
     for col in cat_cols:
-        df[col] = df[col].astype(str)
-    return cat_cols
-
-
-def _make_pool(df: pd.DataFrame) -> Pool:
-    cat_cols = _get_cat_features(df)
+        df[col] = df[col].astype(str).replace("nan", "Aucun")
     return Pool(data=df, cat_features=cat_cols if cat_cols else None)
 
 
@@ -116,7 +112,7 @@ class InsurancePredictor:
         df = pd.DataFrame([input_data])
         df = freq_prep.preprocess(df)
         cols = self._get_cols_freq(df)
-        pool = _make_pool(df[cols])
+        pool = _make_pool(df[cols], self.model_freq)
         frequence = float(self.model_freq.predict_proba(pool)[:, 1][0])
         return round(frequence, 6)
 
@@ -145,7 +141,7 @@ class InsurancePredictor:
             )
 
         cols = self._get_cols_sev(df)
-        pool = _make_pool(df[cols])
+        pool = _make_pool(df[cols], self.model_sev)
         severite = float(self.model_sev.predict(pool)[0])
         return round(max(severite, 0.0), 2)
 
