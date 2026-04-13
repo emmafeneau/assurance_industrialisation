@@ -13,9 +13,8 @@ from app.models.schemas import (
     PrimeOutput,
     SeveriteOutput,
 )
-from app.services.db_services import save_prediction
+from app.services.db_services import list_predictions, save_prediction
 from app.services.predictor import InsurancePredictor, get_predictor
-from app.services.db_services import list_predictions
 
 router = APIRouter(prefix="/api/v1", tags=["predictions"])
 
