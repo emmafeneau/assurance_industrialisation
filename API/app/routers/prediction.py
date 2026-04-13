@@ -15,6 +15,7 @@ from app.models.schemas import (
 )
 from app.services.db_services import save_prediction
 from app.services.predictor import InsurancePredictor, get_predictor
+from app.services.db_services import list_predictions
 
 router = APIRouter(prefix="/api/v1", tags=["predictions"])
 
@@ -98,3 +99,21 @@ def health(predictor: InsurancePredictor = Depends(get_predictor)):
         freq_model="catboost_calibrated.pkl — OK" if freq_ok else "ERREUR",
         sev_model="catboost_severite.pkl — OK" if sev_ok else "ERREUR",
     )
+
+
+@router.get("/predictions")
+def get_predictions(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):
+    predictions = list_predictions(db, skip=skip, limit=limit)
+    return [
+        {
+            "id": p.id,
+            "prediction_type": p.prediction_type,
+            "frequence": p.frequence,
+            "severite": p.severite,
+            "prime_pure": p.prime_pure,
+            "marque": p.input_data.get("marque_vehicule"),
+            "modele": p.input_data.get("modele_vehicule"),
+            "created_at": p.created_at,
+        }
+        for p in predictions
+    ]
