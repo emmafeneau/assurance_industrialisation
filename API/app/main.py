@@ -1,16 +1,21 @@
 import logging
 import os
 import sys
+import time
 import traceback
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.db.database import create_tables
+from app.db.database import SessionLocal, create_tables
+from app.db.models import RequestLog
 from app.routers.prediction import router
 from app.routers.vehicles import router as vehicles_router
 
+# -----------------------
+# Logging structuré
+# -----------------------
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.INFO,
@@ -46,15 +51,38 @@ def startup():
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
+    start = time.time()
     logger.info(f"→ {request.method} {request.url.path}")
     response = await call_next(request)
+    duration_ms = (time.time() - start) * 1000
     logger.info(f"← {request.method} {request.url.path} {response.status_code}")
+
+    # Sauvegarde en DB (hors OPTIONS et favicon)
+    if request.url.path not in ("/favicon.ico",) and request.method != "OPTIONS":
+        try:
+            db = SessionLocal()
+            log = RequestLog(
+                method=request.method,
+                path=request.url.path,
+                status_code=response.status_code,
+                duration_ms=round(duration_ms, 2),
+            )
+            db.add(log)
+            db.commit()
+        except Exception as e:
+            logger.warning(f"Impossible de sauvegarder le log: {e}")
+        finally:
+            db.close()
+
     return response
 
 
 app.include_router(router)
 app.include_router(vehicles_router)
 
+# -----------------------
+# Handler d'erreurs global
+# -----------------------
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
 
