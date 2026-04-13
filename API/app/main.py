@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.db.database import create_tables
 from app.routers.prediction import router
+from app.routers.vehicles import router as vehicles_router
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -52,6 +53,7 @@ async def log_requests(request: Request, call_next):
 
 
 app.include_router(router)
+app.include_router(vehicles_router)
 
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
