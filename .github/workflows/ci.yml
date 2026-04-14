@@ -26,25 +26,11 @@ jobs:
         run: uv run ruff check .
 
       - name: Mypy
-        run: uv run mypy API/app --ignore-missing-imports
+        run: uv run mypy . --ignore-missing-imports
 
   test:
-    name: Tests API
+    name: API Tests
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: insurance
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
 
     steps:
       - uses: actions/checkout@v4
@@ -58,14 +44,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra api --extra dev
 
-      - name: Create DB tables
-        env:
-            DATABASE_URL: postgresql://user:password@localhost:5432/insurance
-        run: uv run python -c "from API.app.db.database import create_tables; create_tables()"
-
       - name: Run tests
         env:
-          DATABASE_URL: postgresql://user:password@localhost:5432/insurance
           FREQ_MODEL_PATH: Frequence/models/catboost_calibrated.pkl
           SEV_MODEL_PATH: Severite/models/catboost_severite.pkl
           RF_POIDS_PATH: Severite/models/model_rf_poids.pkl

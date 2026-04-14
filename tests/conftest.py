@@ -1,11 +1,13 @@
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "API"))
 
-from app.db import models  # noqa — enregistre les tables dans Base.metadata
-from app.db.database import create_tables
+_mock_record = MagicMock()
+_mock_record.id = 1
 
+_patcher = patch("app.services.db_services.save_prediction", return_value=_mock_record)
+_patcher.start()
 
-def pytest_configure(config):  # type: ignore
-    create_tables()
+from app.db import models  # noqa
