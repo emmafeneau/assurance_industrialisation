@@ -15,9 +15,9 @@ load_dotenv(_PROJECT_ROOT / ".env")
 # -----------------------
 # Chemins depuis .env
 # -----------------------
-_freq_model = os.getenv("FREQ_MODEL_PATH", "Frequence/models/catboost_calibrated.pkl")
-_sev_model = os.getenv("SEV_MODEL_PATH", "Severite/models/catboost_severite.pkl")
-_rf_poids = os.getenv("RF_POIDS_PATH", "Severite/models/model_rf_poids.pkl")
+_freq_model = os.getenv("FREQ_MODEL_PATH", "frequence/models/catboost_calibrated.pkl")
+_sev_model = os.getenv("SEV_MODEL_PATH", "severite/models/catboost_severite.pkl")
+_rf_poids = os.getenv("RF_POIDS_PATH", "severite/models/model_rf_poids.pkl")
 
 FREQ_MODEL_PATH = str(_PROJECT_ROOT / _freq_model) if not Path(_freq_model).is_absolute() else _freq_model
 SEV_MODEL_PATH = str(_PROJECT_ROOT / _sev_model) if not Path(_sev_model).is_absolute() else _sev_model
@@ -37,8 +37,8 @@ def _load_module(name: str, path: str) -> Any:
 
 
 _BASE = _PROJECT_ROOT
-freq_prep: Any = _load_module("freq_prep", str(_BASE / "Frequence/src/preprocessing.py"))
-sev_prep: Any = _load_module("sev_prep", str(_BASE / "Severite/src/preprocessing.py"))
+freq_prep: Any = _load_module("freq_prep", str(_BASE / "frequence/src/preprocessing.py"))
+sev_prep: Any = _load_module("sev_prep", str(_BASE / "severite/src/preprocessing.py"))
 
 sev_prep.RF_POIDS_PATH = RF_POIDS_PATH or sev_prep.RF_POIDS_PATH
 

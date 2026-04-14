@@ -5,8 +5,8 @@ services:
       - "8001:8001"
     env_file: .env
     volumes:
-      - ./Frequence:/app/Frequence
-      - ./Severite:/app/Severite
+      - ./frequence:/app/frequence
+      - ./severite:/app/severite
     depends_on:
       db:
         condition: service_healthy

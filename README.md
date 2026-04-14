@@ -105,7 +105,7 @@ uv sync --extra api --extra dev
 The severity model uses a Random Forest to impute missing vehicle weights. This pickle must be generated before any training.
 
 ```bash
-cd Severite/src
+cd severite/src
 python train_rf_poids.py
 ```
 
@@ -116,7 +116,7 @@ Saves `Severite/models/model_rf_poids.pkl`
 ### Step 2 — Train the frequency model (once)
 
 ```bash
-cd Frequence/src
+cd frequence/src
 python main.py --mode train
 ```
 
@@ -127,7 +127,7 @@ Saves `Frequence/models/catboost_calibrated.pkl`
 ### Step 3 — Train the severity model (once)
 
 ```bash
-cd Severite/src
+cd severite/src
 python main.py --mode train
 ```
 
@@ -138,7 +138,7 @@ Saves `Severite/models/catboost_severite.pkl`
 ### Step 4 — Compute premiums
 
 ```bash
-cd Prime/src
+cd prime/src
 python main.py
 
 # On a specific file
@@ -153,11 +153,11 @@ Exports `Prime/outputs/primes.csv` with `index` and `prime` per contract
 
 ```bash
 # Claim probabilities
-cd Frequence/src
+cd frequence/src
 python main.py --mode predict
 
 # Claim amounts
-cd Severite/src
+cd severite/src
 python main.py --mode predict
 ```
 

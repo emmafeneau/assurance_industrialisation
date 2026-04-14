@@ -26,21 +26,21 @@ data/*.xlsx
 
 # ── Modèles ML (trop lourds pour git) ────────────────
 # Décommentez si vous préférez ne pas versionner les .pkl
-# Frequence/models/*.pkl
-# Severite/models/*.pkl
+# frequence/models/*.pkl
+# severite/models/*.pkl
 
 # ── Outputs intermédiaires ───────────────────────────
-Frequence/outputs/*
-Severite/outputs/*
-Prime/outputs/*
-!Frequence/outputs/gitkeep
-!Severite/outputs/gitkeep
-!Prime/outputs/gitkeep
+frequence/outputs/*
+severite/outputs/*
+prime/outputs/*
+!frequence/outputs/gitkeep
+!severite/outputs/gitkeep
+!prime/outputs/gitkeep
 
 # ── CatBoost info ────────────────────────────────────
 catboost_info/
-Frequence/src/catboost_info/
-Severite/src/catboost_info/
+frequence/src/catboost_info/
+severite/src/catboost_info/
 
 # ── IDE ──────────────────────────────────────────────
 .idea/

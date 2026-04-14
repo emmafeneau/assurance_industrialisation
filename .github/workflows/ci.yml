@@ -46,8 +46,8 @@ jobs:
 
       - name: Run tests
         env:
-          FREQ_MODEL_PATH: Frequence/models/catboost_calibrated.pkl
-          SEV_MODEL_PATH: Severite/models/catboost_severite.pkl
-          RF_POIDS_PATH: Severite/models/model_rf_poids.pkl
+          FREQ_MODEL_PATH: frequence/models/catboost_calibrated.pkl
+          SEV_MODEL_PATH: severite/models/catboost_severite.pkl
+          RF_POIDS_PATH: severite/models/model_rf_poids.pkl
           DEBUG: "true"
         run: uv run pytest tests/ -v

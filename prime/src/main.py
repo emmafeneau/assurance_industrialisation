@@ -3,20 +3,20 @@ main.py — Calcul de la prime pure par contrat.
 
 Ce script combine les deux modèles selon la décomposition actuarielle :
 
-    Prime = P(sinistre) × Coût moyen conditionnel au sinistre
+    prime = P(sinistre) × Coût moyen conditionnel au sinistre
           = proba_fréquence × prédiction_sévérité
 
 Les deux modèles sont chargés depuis leurs pickles respectifs.
 Aucun réentraînement n'est effectué ici.
 
 Prérequis (dans l'ordre) :
-    1. Severite/src/train_rf_poids.py          → génère Severite/models/model_rf_poids.pkl
-    2. Frequence/src/main.py --mode train       → génère Frequence/models/catboost_calibrated.pkl
-    3. Severite/src/main.py --mode train        → génère Severite/models/catboost_severite.pkl
-    4. Ce script                                → génère Prime/outputs/primes.csv
+    1. severite/src/train_rf_poids.py          → génère severite/models/model_rf_poids.pkl
+    2. frequence/src/main.py --mode train       → génère frequence/models/catboost_calibrated.pkl
+    3. severite/src/main.py --mode train        → génère severite/models/catboost_severite.pkl
+    4. Ce script                                → génère prime/outputs/primes.csv
 
 Usage :
-    cd Prime/src
+    cd prime/src
     python main.py
     python main.py --data ../../data/test.csv
 """
@@ -35,9 +35,9 @@ import pandas as pd
 # -----------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 TEST_PATH = os.path.join(BASE_DIR, "data", "test.csv")
-FREQ_MODEL_PATH = os.path.join(BASE_DIR, "Frequence", "models", "catboost_calibrated.pkl")
-SEV_MODEL_PATH = os.path.join(BASE_DIR, "Severite", "models", "catboost_severite.pkl")
-OUTPUT_PATH = os.path.join(BASE_DIR, "Prime", "outputs", "primes.csv")
+FREQ_MODEL_PATH = os.path.join(BASE_DIR, "frequence", "models", "catboost_calibrated.pkl")
+SEV_MODEL_PATH = os.path.join(BASE_DIR, "severite", "models", "catboost_severite.pkl")
+OUTPUT_PATH = os.path.join(BASE_DIR, "prime", "outputs", "primes.csv")
 
 
 # -----------------------
@@ -55,10 +55,10 @@ def import_module_from_path(name: str, filepath: str):
 
 # Chargement des modules preprocessing de chaque modèle
 freq_prep = import_module_from_path(
-    "freq_preprocessing", os.path.join(BASE_DIR, "Frequence", "src", "preprocessing.py")
+    "freq_preprocessing", os.path.join(BASE_DIR, "frequence", "src", "preprocessing.py")
 )
 sev_prep = import_module_from_path(
-    "sev_preprocessing", os.path.join(BASE_DIR, "Severite", "src", "preprocessing.py")
+    "sev_preprocessing", os.path.join(BASE_DIR, "severite", "src", "preprocessing.py")
 )
 
 
@@ -116,7 +116,7 @@ def predict_severite(model, df: pd.DataFrame) -> np.ndarray:
 def compute_prime(probas_freq: np.ndarray, preds_sev: np.ndarray) -> np.ndarray:
     """
     Calcule la prime pure par contrat :
-        Prime = P(sinistre) × E[coût | sinistre]
+        prime = P(sinistre) × E[coût | sinistre]
     """
     return probas_freq * preds_sev
 
