@@ -7,7 +7,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --extra api --no-dev --frozen
 
-COPY API/app ./app
+COPY api/app ./app
 COPY Frequence/models ./Frequence/models
 COPY Frequence/src ./Frequence/src
 COPY Severite/models ./Severite/models

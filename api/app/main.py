@@ -25,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger("insurance_api")
 
 app = FastAPI(
-    title="Insurance Prediction API",
+    title="Insurance Prediction api",
     description="Moteur de tarification assurance auto — fréquence, sévérité, prime pure",
     version="1.0.0",
 )
@@ -44,9 +44,9 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup():
-    logger.info("Démarrage de l'API — création des tables si nécessaire")
+    logger.info("Démarrage de l'api — création des tables si nécessaire")
     create_tables()
-    logger.info("API prête")
+    logger.info("api prête")
 
 
 @app.middleware("http")
